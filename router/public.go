@@ -34,9 +34,19 @@ func RegisterPublicRoutes(ctx context.Context, engine *gin.Engine) {
 
 	groupRoutes := apiV1.Group("/groups", middleware.SanitizeQueryParams(), authMiddleware.Authenticate())
 	{
+		// Group management
 		groupRoutes.POST("/", userController.CreateGroup)
 		groupRoutes.PUT("/:group_id", userController.UpdateGroup)
 		groupRoutes.DELETE("/:group_id", userController.RemoveGroup)
 		groupRoutes.GET("/", userController.GetUserGroups)
+
+		// Bills for group
+		groupRoutes.POST("/:group_id/bills", userController.CreateGroupBill)
+		groupRoutes.PUT("/:group_id/bills/:bill_id", userController.UpdateGroupBill)
+		groupRoutes.DELETE("/:group_id/bills/:bill_id", userController.DeleteGroupBill)
+
+		// Permissions (optional if needed to expose)
+		// groupRoutes.GET("/:group_id/permissions", userController.GetGroupPermissions)
+		// groupRoutes.POST("/:group_id/permissions", userController.UpdateGroupPermissions)
 	}
 }

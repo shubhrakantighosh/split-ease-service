@@ -4,16 +4,16 @@ import (
 	"github.com/google/wire"
 	authRepo "main/internal/auth/repository"
 	authSvc "main/internal/auth/service"
+	billRepo "main/internal/bill/repository"
+	billSvc "main/internal/bill/service"
+	groupRepo "main/internal/group/repository"
+	groupSvc "main/internal/group/service"
+	groupPermissionRepo "main/internal/group_permission/repository"
+	groupPermissionSvc "main/internal/group_permission/service"
 	otpRepo "main/internal/otp/repository"
 	otpSvc "main/internal/otp/service"
 	userRepo "main/internal/user/repository"
 	userSvc "main/internal/user/service"
-
-	groupRepo "main/internal/group/repository"
-	groupSvc "main/internal/group/service"
-
-	groupPermissionRepo "main/internal/group_permission/repository"
-	groupPermissionSvc "main/internal/group_permission/service"
 )
 
 var ProviderSet = wire.NewSet(
@@ -28,6 +28,8 @@ var ProviderSet = wire.NewSet(
 	groupSvc.NewService,
 	groupPermissionRepo.NewRepository,
 	groupPermissionSvc.NewService,
+	billSvc.NewService,
+	billRepo.NewRepository,
 
 	// bind each one of the interfaces
 	wire.Bind(new(Interface), new(*Controller)),
@@ -41,4 +43,6 @@ var ProviderSet = wire.NewSet(
 	wire.Bind(new(groupSvc.Interface), new(*groupSvc.Service)),
 	wire.Bind(new(groupPermissionRepo.Interface), new(*groupPermissionRepo.Repository)),
 	wire.Bind(new(groupPermissionSvc.Interface), new(*groupPermissionSvc.Service)),
+	wire.Bind(new(billSvc.Interface), new(*billSvc.Service)),
+	wire.Bind(new(billRepo.Interface), new(*billRepo.Repository)),
 )

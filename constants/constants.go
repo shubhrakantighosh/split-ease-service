@@ -15,6 +15,7 @@ const (
 	Used                = "used"
 	Password            = "password"
 	GroupID             = "group_id"
+	BillID              = ""
 	PermissionType      = "permission_type"
 	Name                = "name"
 	Description         = "description"

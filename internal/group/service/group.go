@@ -35,7 +35,7 @@ func (s *Service) CreateGroup(ctx context.Context, userID uint64, req request.Cr
 		ctx,
 		userID,
 		group.ID,
-		[]model.PermissionType{model.View, model.Edit, model.Delete},
+		[]model.PermissionType{model.View, model.Create, model.Edit, model.Delete},
 	)
 }
 

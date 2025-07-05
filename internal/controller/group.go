@@ -8,6 +8,7 @@ import (
 	"main/internal/jwt/private"
 	"main/util"
 	"net/http"
+	"strconv"
 )
 
 func (ctrl *Controller) CreateGroup(ctx *gin.Context) {
@@ -94,4 +95,95 @@ func (ctrl *Controller) GetUserGroups(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, adapter.BuildGroupPermissionsResponse(groups, groupPermissions))
+}
+
+func (ctrl *Controller) GetGroupDetails(ctx *gin.Context) {
+
+}
+
+func (ctrl *Controller) CreateGroupBill(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	var req request.CreateBillRequest
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": bindErr.Error()})
+		return
+	}
+
+	if err = ctrl.groupService.CreateGroupBill(ctx, userID, groupID, req); err.Exists() {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Bill created successfully"})
+}
+
+func (ctrl *Controller) UpdateGroupBill(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	billID, convErr := strconv.ParseUint(ctx.Param(constants.BillID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bill ID"})
+		return
+	}
+
+	var req request.UpdateBillRequest
+	if bindErr := ctx.ShouldBindJSON(&req); bindErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": bindErr.Error()})
+		return
+	}
+
+	if err = ctrl.groupService.UpdateGroupBill(ctx, userID, groupID, billID, req); err.Exists() {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Bill updated successfully"})
+}
+
+func (ctrl *Controller) DeleteGroupBill(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	billID, convErr := strconv.ParseUint(ctx.Param(constants.BillID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bill ID"})
+		return
+	}
+
+	if err = ctrl.groupService.DeleteGroupBill(ctx, userID, groupID, billID); err.Exists() {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Bill deleted successfully"})
 }

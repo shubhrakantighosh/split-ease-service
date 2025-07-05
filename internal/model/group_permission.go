@@ -10,12 +10,14 @@ type PermissionType string
 const (
 	View   PermissionType = "View"
 	Edit   PermissionType = "Edit"
+	Create PermissionType = "Create"
 	Delete PermissionType = "Delete"
 )
 
 var PermissionTypeToString = map[PermissionType]string{
 	View:   "view",
 	Edit:   "edit",
+	Create: "create",
 	Delete: "delete",
 }
 
