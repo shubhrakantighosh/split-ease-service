@@ -36,4 +36,11 @@ type Interface interface {
 		ctx context.Context,
 		userID, groupID, billID uint64,
 	) apperror.Error
+
+	ValidateUserGroupPermission(
+		ctx context.Context,
+		userID,
+		groupID uint64,
+		permissionType model.PermissionType,
+	) (bool, apperror.Error)
 }

@@ -6,6 +6,8 @@ import (
 	authSvc "main/internal/auth/service"
 	billRepo "main/internal/bill/repository"
 	billSvc "main/internal/bill/service"
+	billSplitRepo "main/internal/bill_split/repository"
+	billSplitSvc "main/internal/bill_split/service"
 	groupRepo "main/internal/group/repository"
 	groupSvc "main/internal/group/service"
 	groupPermissionRepo "main/internal/group_permission/repository"
@@ -30,6 +32,8 @@ var ProviderSet = wire.NewSet(
 	groupPermissionSvc.NewService,
 	billSvc.NewService,
 	billRepo.NewRepository,
+	billSplitSvc.NewService,
+	billSplitRepo.NewRepository,
 
 	// bind each one of the interfaces
 	wire.Bind(new(Interface), new(*Controller)),
@@ -45,4 +49,6 @@ var ProviderSet = wire.NewSet(
 	wire.Bind(new(groupPermissionSvc.Interface), new(*groupPermissionSvc.Service)),
 	wire.Bind(new(billSvc.Interface), new(*billSvc.Service)),
 	wire.Bind(new(billRepo.Interface), new(*billRepo.Repository)),
+	wire.Bind(new(billSplitSvc.Interface), new(*billSplitSvc.Service)),
+	wire.Bind(new(billSplitRepo.Interface), new(*billSplitRepo.Repository)),
 )

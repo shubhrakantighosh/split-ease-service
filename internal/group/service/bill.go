@@ -90,12 +90,11 @@ func (s *Service) DeleteGroupBill(
 		return apperror.NewWithMessage("Permission denied", http.StatusForbidden)
 	}
 
+	err = s.billSvc.DeleteBill(ctx, billID)
 	if err.Exists() {
-		log.Printf("%s failed to delete bill %d by user %d: %v", logTag, billID, userID, err)
-
-		return apperror.NewWithMessage("Failed to delete bill", http.StatusBadRequest)
+		log.Printf("%s failed to delete bill %d for user %d: %v", logTag, billID, userID, err)
+		return err
 	}
-
 	return apperror.Error{}
 }
 

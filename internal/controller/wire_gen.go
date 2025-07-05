@@ -12,6 +12,8 @@ import (
 	"main/internal/auth/service"
 	repository6 "main/internal/bill/repository"
 	service5 "main/internal/bill/service"
+	repository7 "main/internal/bill_split/repository"
+	service7 "main/internal/bill_split/service"
 	repository4 "main/internal/group/repository"
 	service6 "main/internal/group/service"
 	repository5 "main/internal/group_permission/repository"
@@ -27,17 +29,19 @@ import (
 
 func Wire(ctx context.Context, db *postgres.DbCluster) *Controller {
 	repositoryRepository := repository.NewRepository(db)
-	repository7 := repository2.NewRepository(db)
-	serviceService := service.NewService(repository7)
-	repository8 := repository3.NewRepository(db)
-	service7 := service2.NewService(repository8)
-	service8 := service3.NewService(repositoryRepository, serviceService, service7)
-	repository9 := repository4.NewRepository(db)
-	repository10 := repository5.NewRepository(db)
-	service9 := service4.NewService(repository10)
-	repository11 := repository6.NewRepository(db)
-	service10 := service5.NewService(repository11)
-	service11 := service6.NewService(repository9, service9, service10)
-	controller := NewController(service8, service11)
+	repository8 := repository2.NewRepository(db)
+	serviceService := service.NewService(repository8)
+	repository9 := repository3.NewRepository(db)
+	service8 := service2.NewService(repository9)
+	service9 := service3.NewService(repositoryRepository, serviceService, service8)
+	repository10 := repository4.NewRepository(db)
+	repository11 := repository5.NewRepository(db)
+	service10 := service4.NewService(repository11)
+	repository12 := repository6.NewRepository(db)
+	service11 := service5.NewService(repository12)
+	service12 := service6.NewService(repository10, service10, service11)
+	repository13 := repository7.NewRepository(db)
+	service13 := service7.NewService(repository13, service11, service12)
+	controller := NewController(service9, service12, service13)
 	return controller
 }

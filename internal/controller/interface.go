@@ -15,9 +15,12 @@ type Interface interface {
 	UpdateGroup(ctx *gin.Context)
 	RemoveGroup(ctx *gin.Context)
 	GetUserGroups(ctx *gin.Context)
-	//GetGroupDetails(ctx *gin.Context)
+	GetGroupDetails(ctx *gin.Context)
 
 	CreateGroupBill(ctx *gin.Context)
 	UpdateGroupBill(ctx *gin.Context)
 	DeleteGroupBill(ctx *gin.Context)
+
+	CalculateBillSplits(ctx *gin.Context)
+	RecalculateBillSplits(ctx *gin.Context)
 }

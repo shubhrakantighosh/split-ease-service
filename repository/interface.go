@@ -36,4 +36,10 @@ type Interface[T any] interface {
 		filter map[string]interface{},
 		scopes ...func(db *gorm.DB) *gorm.DB,
 	) (result T, err apperror.Error)
+
+	Delete(
+		ctx context.Context,
+		filter map[string]interface{},
+		scopes ...func(db *gorm.DB) *gorm.DB,
+	) apperror.Error
 }

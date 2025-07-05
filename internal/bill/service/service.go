@@ -30,13 +30,17 @@ func NewService(r repository.Interface) *Service {
 	return svc
 }
 
+func (s *Service) GetBills(ctx context.Context, filter map[string]any) (model.Bills, apperror.Error) {
+	return s.GetAll(ctx, filter)
+}
+
 func (s *Service) CreateBill(ctx context.Context, bill model.Bill) apperror.Error {
 	logTag := util.LogPrefix(ctx, "CreateBillForGroup")
 
 	err := s.Create(ctx, &bill)
 	if err.Exists() {
 		log.Printf("%s failed to create bill for bill %v: %v", logTag, bill, err)
-		return apperror.NewWithMessage("Failed to create bill", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to create bill", http.StatusBadRequest)
 	}
 
 	return apperror.Error{}

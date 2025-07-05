@@ -98,7 +98,26 @@ func (ctrl *Controller) GetUserGroups(ctx *gin.Context) {
 }
 
 func (ctrl *Controller) GetGroupDetails(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	// add all bills, split bills etc
+	group, err := ctrl.groupService.GetGroupDetails(ctx, userID, groupID)
+	if err.Exists() {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, group)
 }
 
 func (ctrl *Controller) CreateGroupBill(ctx *gin.Context) {
@@ -121,7 +140,7 @@ func (ctrl *Controller) CreateGroupBill(ctx *gin.Context) {
 	}
 
 	if err = ctrl.groupService.CreateGroupBill(ctx, userID, groupID, req); err.Exists() {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -154,7 +173,7 @@ func (ctrl *Controller) UpdateGroupBill(ctx *gin.Context) {
 	}
 
 	if err = ctrl.groupService.UpdateGroupBill(ctx, userID, groupID, billID, req); err.Exists() {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -186,4 +205,48 @@ func (ctrl *Controller) DeleteGroupBill(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Bill deleted successfully"})
+}
+
+func (ctrl *Controller) CalculateBillSplits(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group_id"})
+		return
+	}
+
+	splits, err := ctrl.billSplitSvc.CalculateAndSaveBillSplits(ctx, userID, groupID)
+	if err.Exists() {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"splits": splits})
+}
+
+func (ctrl *Controller) RecalculateBillSplits(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	groupID, convErr := strconv.ParseUint(ctx.Param(constants.GroupID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group_id"})
+		return
+	}
+
+	splits, err := ctrl.billSplitSvc.RecalculateBillSplits(ctx, userID, groupID)
+	if err.Exists() {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"splits": splits})
 }

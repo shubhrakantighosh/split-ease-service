@@ -76,6 +76,22 @@ func (r *Repository[T]) Get(
 	return result, apperror.Error{}
 }
 
+func (r *Repository[T]) Delete(
+	ctx context.Context,
+	filter map[string]interface{},
+	scopes ...func(db *gorm.DB) *gorm.DB,
+) apperror.Error {
+	logTag := util.LogPrefix(ctx, "Repository.Delete")
+
+	tx := r.Db.GetMasterDB(ctx).Model(new(T)).Where(filter).Scopes(scopes...).Delete(nil)
+	if tx.Error != nil {
+		log.Println(logTag, "failed to soft delete record:", tx.Error)
+		return apperror.New(tx.Error, http.StatusBadRequest)
+	}
+
+	return apperror.Error{}
+}
+
 func (r *Repository[T]) Create(ctx context.Context, data *T) apperror.Error {
 	logTag := util.LogPrefix(ctx, "Repository.Create")
 
