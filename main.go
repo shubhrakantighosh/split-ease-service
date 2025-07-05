@@ -8,6 +8,7 @@ import (
 	initilizer "main/init"
 	"main/internal/controller"
 	opostgres "main/pkg/db/postgres"
+	"main/router"
 )
 
 func main() {
@@ -20,6 +21,8 @@ func main() {
 
 	app := gin.New()
 	app.GET("/", c.Ge)
+
+	router.PublicRoutes(ctx, app)
 
 	port := viper.GetString("server.port")
 	if err := app.Run(port); err != nil {

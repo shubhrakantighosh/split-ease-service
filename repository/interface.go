@@ -14,7 +14,7 @@ type Interface[T any] interface {
 	Update(
 		ctx context.Context,
 		filter map[string]interface{},
-		updates map[string]interface{},
+		updates any,
 	) apperror.Error
 
 	UpdateMany(ctx context.Context, data []T) apperror.Error

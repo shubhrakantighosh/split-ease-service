@@ -19,3 +19,9 @@ postgresql:
     port: "5433"
     username: "admin"
     password: "admin"
+
+jwt:
+  access_secret: your_access_secret_key_here
+  refresh_secret: your_refresh_secret_key_here
+  access_expiry_minutes: 15
+  refresh_expiry_days: 7

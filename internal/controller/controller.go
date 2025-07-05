@@ -2,19 +2,20 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"main/internal/auth/service"
+	userService "main/internal/user/service"
 )
 
 type Controller struct {
-	service.Interface
+	userSvc userService.Interface
 }
 
-func NewController(s service.Interface) *Controller {
+func NewController(userSvc userService.Interface) *Controller {
 	return &Controller{
-		s,
+		userSvc: userSvc,
 	}
 }
 
-func (ctrl *Controller) Ge(ctx *gin.Context) {
-	ctrl.Get(ctx)
+func (ctrl *Controller) Login(ctx *gin.Context) {
+	ctrl.userS
+
 }

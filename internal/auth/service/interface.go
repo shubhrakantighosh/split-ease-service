@@ -1,7 +1,12 @@
 package service
 
-import "context"
+import (
+	"context"
+	"main/internal/model"
+	"main/pkg/apperror"
+)
 
 type Interface interface {
-	Get(ctx context.Context)
+	GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) (model.AuthToken, apperror.Error)
+	MarkTokenExpired(ctx context.Context, userID uint64) apperror.Error
 }

@@ -105,7 +105,7 @@ func (r *Repository[T]) CreateMany(ctx context.Context, data []*T) apperror.Erro
 func (r *Repository[T]) Update(
 	ctx context.Context,
 	filter map[string]interface{},
-	updates map[string]interface{},
+	updates any,
 ) apperror.Error {
 	logTag := util.LogPrefix(ctx, "Repository.Update")
 
