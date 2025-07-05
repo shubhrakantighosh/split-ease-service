@@ -52,21 +52,42 @@ func BuildGroupDetailsResponse(
 	group model.Group,
 	users model.Users,
 	bills model.Bills,
+	billSplits []model.BillSplit,
 ) *response.GroupDetails {
 	idMap := users.MapByID()
+	splitsByCreditor := make(map[uint64][]model.BillSplit)
+	for _, split := range billSplits {
+		splitsByCreditor[split.ToPayUserID] = append(splitsByCreditor[split.ToPayUserID], split)
+	}
 
-	result := make(response.Bills, 0, len(bills))
+	responseBills := make([]response.Bill, 0, len(bills))
+
 	for _, bill := range bills {
-		user := idMap[bill.UserID]
+		payer := idMap[bill.UserID]
 
-		result = append(result, response.Bill{
+		billSplitEntries := make([]response.BillSplitEntry, 0)
+		for _, split := range splitsByCreditor[bill.UserID] {
+			fromUser := idMap[split.UserID]
+			billSplitEntries = append(billSplitEntries, response.BillSplitEntry{
+				FromUser: response.User{
+					ID:    fromUser.ID,
+					Name:  fromUser.Name,
+					Email: fromUser.Email,
+				},
+				AmountDue: split.AmountDue,
+				IsPaid:    split.IsPaid,
+			})
+		}
+
+		responseBills = append(responseBills, response.Bill{
+			User: response.User{
+				ID:    payer.ID,
+				Name:  payer.Name,
+				Email: payer.Email,
+			},
 			PaidAmount:  bill.PaidAmount,
 			Description: bill.Description,
-			User: response.User{
-				ID:    user.ID,
-				Name:  user.Name,
-				Email: user.Email,
-			},
+			Splits:      billSplitEntries,
 		})
 	}
 
@@ -74,6 +95,6 @@ func BuildGroupDetailsResponse(
 		ID:          group.ID,
 		Name:        group.Name,
 		Description: group.Description,
-		Bills:       result,
+		Bills:       responseBills,
 	}
 }

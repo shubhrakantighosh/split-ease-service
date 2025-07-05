@@ -188,7 +188,14 @@ func (s *Service) FetchGroupDetailsByUserAccess(ctx context.Context, userID, gro
 		return nil, apperror.NewWithMessage("Failed to fetch users", http.StatusBadRequest)
 	}
 
-	return adapter.BuildGroupDetailsResponse(group, users, bills), apperror.Error{}
+	billSplits, err := s.billSplitSvc.GetBillSplitsByFilter(ctx, map[string]any{constants.GroupID: groupID})
+	if err.Exists() {
+		log.Printf("%s failed to retrieve bill splits for group ID %d: %v", logTag, groupID, err)
+
+		return nil, apperror.NewWithMessage("Unable to retrieve bill split details", http.StatusBadRequest)
+	}
+
+	return adapter.BuildGroupDetailsResponse(group, users, bills, billSplits), apperror.Error{}
 }
 
 func (s *Service) AssignUserToGroup(

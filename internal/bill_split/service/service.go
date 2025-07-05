@@ -38,6 +38,10 @@ func NewService(
 	return svc
 }
 
+func (s *Service) GetBillSplitsByFilter(ctx context.Context, filter map[string]any) ([]model.BillSplit, apperror.Error) {
+	return s.billSplitRepo.GetAll(ctx, filter)
+}
+
 func (s *Service) CalculateAndSaveBillSplits(ctx context.Context, userID, groupID uint64) (model.BillSplits, apperror.Error) {
 	logTag := util.LogPrefix(ctx, "CalculateAndSaveBillSplits")
 
