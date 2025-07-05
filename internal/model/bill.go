@@ -17,3 +17,17 @@ type Bill struct {
 }
 
 type Bills []Bill
+
+func (b Bills) ExtractUniqueUserIDs() []uint64 {
+	uniqueUserIDs := make([]uint64, 0)
+	uniqueUserIDMap := make(map[uint64]struct{})
+
+	for _, bill := range b {
+		if _, exists := uniqueUserIDMap[bill.UserID]; !exists {
+			uniqueUserIDs = append(uniqueUserIDs, bill.UserID)
+			uniqueUserIDMap[bill.UserID] = struct{}{}
+		}
+	}
+
+	return uniqueUserIDs
+}

@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-
 	ctx := context.TODO()
 	config.InitConfig()
 	initilizer.Initialize(ctx)

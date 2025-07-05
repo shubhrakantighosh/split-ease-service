@@ -68,6 +68,22 @@ func (ctrl *Controller) UpdateUserProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
+func (ctrl *Controller) GetUsers(ctx *gin.Context) {
+	userID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	users, err := ctrl.userSvc.GetUsers(ctx, userID)
+	if err.Exists() {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, adapter.BuildUsersResponse(users))
+}
+
 func (ctrl *Controller) SendActivationEmail(ctx *gin.Context) {
 	var req request.SendOTPRequest
 	if err := ctx.ShouldBindBodyWithJSON(&req); err != nil {

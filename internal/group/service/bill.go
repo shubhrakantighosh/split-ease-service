@@ -13,18 +13,23 @@ import (
 
 func (s *Service) CreateGroupBill(
 	ctx context.Context,
-	userID, groupID uint64,
+	currentUserID, userID, groupID uint64,
 	req request.CreateBillRequest,
 ) apperror.Error {
 	logTag := util.LogPrefix(ctx, "CreateGroupBill")
-
-	hasPermission, err := s.ValidateUserGroupPermission(ctx, userID, groupID, model.Create)
+	hasPermission, err := s.ValidateUserGroupPermission(ctx, currentUserID, groupID, model.Create)
 	if err.Exists() {
 		log.Printf("%s failed to validate permission for user %d on group %d: %v", logTag, userID, groupID, err)
 		return err
 	}
 	if !hasPermission {
 		return apperror.NewWithMessage("Permission denied", http.StatusForbidden)
+	}
+
+	if currentUserID != userID && s.userSvc.IsUserValid(ctx, userID) {
+		log.Printf("%s: invalid user ID %d", logTag, userID)
+
+		return apperror.NewWithMessage("Please provide a valid user", http.StatusBadRequest)
 	}
 
 	bill := model.Bill{

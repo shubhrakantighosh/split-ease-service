@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"log"
 	"main/constants"
 	ctrlReq "main/internal/controller/request"
@@ -12,6 +13,38 @@ import (
 	"main/util"
 	"net/http"
 )
+
+func (s *Service) FetchFilteredUsers(ctx context.Context, filter map[string]any) (model.Users, apperror.Error) {
+	logTag := util.LogPrefix(ctx, "FetchFilteredUsers")
+
+	users, err := s.repo.GetAll(ctx, filter)
+	if err.Exists() {
+		log.Printf("%s failed to fetch users with provided filters: %v", logTag, err)
+
+		return nil, apperror.NewWithMessage("Failed to fetch users", http.StatusBadRequest)
+	}
+
+	return users, apperror.Error{}
+}
+
+func (s *Service) GetUsers(ctx context.Context, currentUserID uint64) (model.Users, apperror.Error) {
+	logTag := util.LogPrefix(ctx, "ListOtherUsers")
+
+	scopes := []func(db *gorm.DB) *gorm.DB{
+		func(db *gorm.DB) *gorm.DB {
+			return db.Where("id != ?", currentUserID)
+		},
+	}
+
+	users, err := s.repo.GetAll(ctx, nil, scopes...)
+	if err.Exists() {
+		log.Printf("%s failed to fetch users excluding current user %d: %v", logTag, currentUserID, err)
+
+		return nil, apperror.NewWithMessage("Failed to fetch users", http.StatusBadRequest)
+	}
+
+	return users, apperror.Error{}
+}
 
 func (s *Service) CreateUserAccount(ctx context.Context, req ctrlReq.RegisterRequest) apperror.Error {
 	logTag := util.LogPrefix(ctx, "CreateUserAccount")

@@ -13,6 +13,11 @@ type Interface interface {
 		permissions []model.PermissionType,
 	) apperror.Error
 
+	GetGroupUserPermissionsByFilter(
+		ctx context.Context,
+		filter map[string]interface{},
+	) (model.GroupUserPermissions, apperror.Error)
+
 	FetchUserGroup(
 		ctx context.Context,
 		userID uint64,

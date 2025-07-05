@@ -8,6 +8,7 @@ type Interface interface {
 	LoginUser(ctx *gin.Context)
 	RegisterUser(ctx *gin.Context)
 	UpdateUserProfile(ctx *gin.Context)
+	GetUsers(ctx *gin.Context)
 	SendActivationEmail(ctx *gin.Context)
 	ActivateUser(ctx *gin.Context)
 
@@ -17,7 +18,8 @@ type Interface interface {
 	GetUserGroups(ctx *gin.Context)
 	GetGroupDetails(ctx *gin.Context)
 
-	CreateGroupBill(ctx *gin.Context)
+	CreateGroupBillForUser(ctx *gin.Context)
+	AssignUserToGroup(ctx *gin.Context)
 	UpdateGroupBill(ctx *gin.Context)
 	DeleteGroupBill(ctx *gin.Context)
 

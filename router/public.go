@@ -30,7 +30,7 @@ func RegisterPublicRoutes(ctx context.Context, engine *gin.Engine) {
 	protectedRoutes := apiV1.Group("/", middleware.SanitizeQueryParams(), authMiddleware.Authenticate())
 	{
 		protectedRoutes.PUT("/users", userController.UpdateUserProfile)
-		protectedRoutes.POST("/users", userController.UpdateUserProfile) // to create for someone
+		protectedRoutes.GET("/users", userController.GetUsers)
 	}
 
 	groupRoutes := apiV1.Group("/groups", middleware.SanitizeQueryParams(), authMiddleware.Authenticate())
@@ -40,12 +40,13 @@ func RegisterPublicRoutes(ctx context.Context, engine *gin.Engine) {
 		groupRoutes.PUT("/:group_id", userController.UpdateGroup)
 		groupRoutes.DELETE("/:group_id", userController.RemoveGroup)
 		groupRoutes.GET("/", userController.GetUserGroups)
-		groupRoutes.GET("/:group_id/", userController.GetGroupDetails)
+		groupRoutes.GET("/:group_id", userController.GetGroupDetails)
 
 		// Bills for group
-		groupRoutes.POST("/:group_id/bills", userController.CreateGroupBill)
+		groupRoutes.POST("/:group_id/users/:user_id/bills", userController.CreateGroupBillForUser)
 		groupRoutes.PUT("/:group_id/bills/:bill_id", userController.UpdateGroupBill)
 		groupRoutes.DELETE("/:group_id/bills/:bill_id", userController.DeleteGroupBill)
+		groupRoutes.POST("/:group_id/assign/:user_id", userController.AssignUserToGroup)
 
 		// Bill Split routes
 		groupRoutes.POST("/:group_id/splits", userController.CalculateBillSplits)

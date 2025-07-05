@@ -4,7 +4,9 @@ import (
 	"context"
 	"log"
 	"main/constants"
+	"main/internal/controller/adapter"
 	"main/internal/controller/request"
+	"main/internal/controller/response"
 	"main/internal/model"
 	"main/pkg/apperror"
 	"main/util"
@@ -103,7 +105,7 @@ func (s *Service) RemoveGroup(ctx context.Context, userID, groupID uint64) apper
 		})
 		if updateErr.Exists() {
 			log.Printf("%s failed to mark group %d as deleted: %v", logTag, groupID, updateErr)
-			errChan <- apperror.NewWithMessage("Failed to delete group", http.StatusInternalServerError)
+			errChan <- apperror.NewWithMessage("Failed to delete group", http.StatusBadRequest)
 		}
 	}()
 
@@ -114,7 +116,7 @@ func (s *Service) RemoveGroup(ctx context.Context, userID, groupID uint64) apper
 		updateErr := s.groupPermissionSvc.DeleteGroupPermissions(ctx, groupID)
 		if updateErr.Exists() {
 			log.Printf("%s failed to mark group permissions for group %d as deleted: %v", logTag, groupID, updateErr)
-			errChan <- apperror.NewWithMessage("Failed to update group permissions", http.StatusInternalServerError)
+			errChan <- apperror.NewWithMessage("Failed to update group permissions", http.StatusBadRequest)
 		}
 	}()
 
@@ -157,25 +159,81 @@ func (s *Service) GetUserGroupsWithPermissions(
 	return groups, groupPermissions, apperror.Error{}
 }
 
-func (s *Service) GetGroupDetails(ctx context.Context, userID, groupID uint64) (model.Group, apperror.Error) {
-	logTag := util.LogPrefix(ctx, "GetUserGroupDetails")
+func (s *Service) FetchGroupDetailsByUserAccess(ctx context.Context, userID, groupID uint64) (*response.GroupDetails, apperror.Error) {
+	logTag := util.LogPrefix(ctx, "FetchGroupDetailsByUserAccess")
+
+	hasPermission, err := s.ValidateUserGroupPermission(ctx, userID, groupID, model.View)
+	if err.Exists() || !hasPermission {
+		log.Printf("%s: user %d does not have view permission for group %d. Error: %v", logTag, userID, groupID, err)
+		return nil, apperror.NewWithMessage("Permission denied", http.StatusForbidden)
+	}
+
+	group, err := s.groupRepo.Get(ctx, map[string]any{constants.ID: groupID})
+	if err.Exists() {
+		log.Printf("%s: failed to retrieve group %d: %v", logTag, groupID, err)
+		return nil, apperror.NewWithMessage("Failed to retrieve group", http.StatusBadRequest)
+	}
+
+	bills, err := s.billSvc.GetBills(ctx, map[string]any{constants.GroupID: groupID})
+	if err.Exists() {
+		log.Printf("%s: failed to fetch bills for group %d: %v", logTag, groupID, err)
+		return nil, apperror.NewWithMessage("Failed to fetch bills", http.StatusBadRequest)
+	}
+
+	users, err := s.userSvc.FetchFilteredUsers(ctx, map[string]any{
+		constants.ID: bills.ExtractUniqueUserIDs(),
+	})
+	if err.Exists() {
+		log.Printf("%s: failed to fetch users for group %d: %v", logTag, groupID, err)
+		return nil, apperror.NewWithMessage("Failed to fetch users", http.StatusBadRequest)
+	}
+
+	return adapter.BuildGroupDetailsResponse(group, users, bills), apperror.Error{}
+}
+
+func (s *Service) AssignUserToGroup(
+	ctx context.Context,
+	currentUserID, userID, groupID uint64,
+) apperror.Error {
+	logTag := util.LogPrefix(ctx, "AssignUserToGroup")
 
 	group, err := s.groupRepo.Get(ctx, map[string]any{
 		constants.ID: groupID,
 	})
 	if err.Exists() {
-		log.Printf("%s failed to fetch group %d for user %d: %v", logTag, groupID, userID, err)
-
-		return model.Group{}, apperror.NewWithMessage("Group not found or access denied", http.StatusNotFound)
+		log.Printf("%s failed to retrieve group %d: %v", logTag, groupID, err)
+		return apperror.NewWithMessage("Failed to retrieve group", http.StatusBadRequest)
 	}
 
-	hasPermission, err := s.groupPermissionSvc.HasUserPermissionInGroup(ctx, userID, groupID, model.View)
-	if err.Exists() || !hasPermission {
-		log.Printf("%s user %d does not have delete permission for group %d. Error: %v", logTag, userID, groupID, err)
+	// we can later change we can allow to all users who has create or edit access
+	if group.OwnerID != currentUserID {
+		log.Printf("%s user %d is not the owner of group %d", logTag, currentUserID, groupID)
 
-		// fix
-		return model.Group{}, apperror.NewWithMessage("Permission denied", http.StatusForbidden)
+		return apperror.NewWithMessage("Unauthorized access to assign user", http.StatusForbidden)
 	}
 
-	return group, apperror.Error{}
+	filter := map[string]any{
+		constants.GroupID: groupID,
+		constants.UserID:  userID,
+	}
+	permissions, err := s.groupPermissionSvc.GetGroupUserPermissionsByFilter(ctx, filter)
+	if err.Exists() {
+		log.Printf("%s failed to fetch existing permissions for user %d in group %d: %v", logTag, userID, groupID, err)
+
+		return apperror.NewWithMessage("Unable to verify existing permissions", http.StatusBadRequest)
+	}
+
+	if len(permissions) > 0 {
+		log.Printf("%s user %d is already assigned to group %d", logTag, userID, groupID)
+		return apperror.NewWithMessage("User already assigned to group", http.StatusBadRequest)
+	}
+
+	// currently hardcore later we can provide support for all permissions
+	err = s.groupPermissionSvc.AssignGroupPermissionsToUser(ctx, userID, groupID, model.PermissionTypes{model.View})
+	if err.Exists() {
+		log.Printf("%s failed to assign user %d to group %d: %v", logTag, userID, groupID, err)
+		return apperror.NewWithMessage("Failed to assign user to group", http.StatusBadRequest)
+	}
+
+	return apperror.Error{}
 }

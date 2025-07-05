@@ -39,7 +39,7 @@ func Wire(ctx context.Context, db *postgres.DbCluster) *Controller {
 	service10 := service4.NewService(repository11)
 	repository12 := repository6.NewRepository(db)
 	service11 := service5.NewService(repository12)
-	service12 := service6.NewService(repository10, service10, service11)
+	service12 := service6.NewService(repository10, service10, service11, service9)
 	repository13 := repository7.NewRepository(db)
 	service13 := service7.NewService(repository13, service11, service12)
 	controller := NewController(service9, service12, service13)

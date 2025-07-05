@@ -37,7 +37,7 @@ func (s *Service) GenerateOTP(ctx context.Context, userID uint64, purpose model.
 	code, err := util.GenerateRandomNumericCode(6)
 	if err != nil {
 		log.Println(logTag, "Failed to generate OTP code:", err)
-		return "", apperror.NewWithMessage("Failed to generate OTP", http.StatusInternalServerError)
+		return "", apperror.NewWithMessage("Failed to generate OTP", http.StatusBadRequest)
 	}
 
 	otp := model.OTP{
@@ -51,7 +51,7 @@ func (s *Service) GenerateOTP(ctx context.Context, userID uint64, purpose model.
 	if createErr.Exists() {
 		log.Println(logTag, "Failed to store OTP in DB:", createErr)
 
-		return "", apperror.NewWithMessage("Failed to create OTP", http.StatusInternalServerError)
+		return "", apperror.NewWithMessage("Failed to create OTP", http.StatusBadRequest)
 	}
 
 	return code, apperror.Error{}
@@ -85,7 +85,7 @@ func (s *Service) ValidateOTP(
 	if err.Exists() {
 		log.Println(logTag, "Failed to fetch OTPs:", err)
 
-		return false, apperror.NewWithMessage("Unable to validate OTP", http.StatusInternalServerError)
+		return false, apperror.NewWithMessage("Unable to validate OTP", http.StatusBadRequest)
 	}
 
 	if len(otps) == 0 {
@@ -123,7 +123,7 @@ func (s *Service) MarkOTPUsed(ctx context.Context, userID uint64, otpCode string
 	if err.Exists() {
 		log.Printf("%s: failed to mark OTP as used for user %d and code %s: %v", logTag, userID, otpCode, err)
 
-		return apperror.NewWithMessage("Unable to mark OTP as used", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Unable to mark OTP as used", http.StatusBadRequest)
 	}
 
 	return apperror.Error{}

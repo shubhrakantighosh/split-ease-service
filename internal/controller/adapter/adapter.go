@@ -32,3 +32,48 @@ func BuildGroupPermissionsResponse(
 
 	return result
 }
+
+func BuildUsersResponse(
+	users model.Users,
+) response.Users {
+	result := make(response.Users, 0, len(users))
+	for _, user := range users {
+		result = append(result, response.User{
+			ID:    user.ID,
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	return result
+}
+
+func BuildGroupDetailsResponse(
+	group model.Group,
+	users model.Users,
+	bills model.Bills,
+) *response.GroupDetails {
+	idMap := users.MapByID()
+
+	result := make(response.Bills, 0, len(bills))
+	for _, bill := range bills {
+		user := idMap[bill.UserID]
+
+		result = append(result, response.Bill{
+			PaidAmount:  bill.PaidAmount,
+			Description: bill.Description,
+			User: response.User{
+				ID:    user.ID,
+				Name:  user.Name,
+				Email: user.Email,
+			},
+		})
+	}
+
+	return &response.GroupDetails{
+		ID:          group.ID,
+		Name:        group.Name,
+		Description: group.Description,
+		Bills:       result,
+	}
+}

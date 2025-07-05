@@ -58,6 +58,13 @@ func (s *Service) AssignGroupPermissionsToUser(
 	return apperror.Error{}
 }
 
+func (s *Service) GetGroupUserPermissionsByFilter(
+	ctx context.Context,
+	filter map[string]interface{},
+) (model.GroupUserPermissions, apperror.Error) {
+	return s.GetAll(ctx, filter)
+}
+
 func (s *Service) FetchUserGroup(
 	ctx context.Context,
 	userID uint64,

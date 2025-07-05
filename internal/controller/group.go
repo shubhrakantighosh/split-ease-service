@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"main/constants"
 	"main/internal/controller/adapter"
 	"main/internal/controller/request"
@@ -90,7 +91,7 @@ func (ctrl *Controller) GetUserGroups(ctx *gin.Context) {
 	// later add filter
 	groups, groupPermissions, err := ctrl.groupService.GetUserGroupsWithPermissions(ctx, userID, make(map[string]any))
 	if err.Exists() {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -111,7 +112,7 @@ func (ctrl *Controller) GetGroupDetails(ctx *gin.Context) {
 	}
 
 	// add all bills, split bills etc
-	group, err := ctrl.groupService.GetGroupDetails(ctx, userID, groupID)
+	group, err := ctrl.groupService.FetchGroupDetailsByUserAccess(ctx, userID, groupID)
 	if err.Exists() {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -120,10 +121,16 @@ func (ctrl *Controller) GetGroupDetails(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, group)
 }
 
-func (ctrl *Controller) CreateGroupBill(ctx *gin.Context) {
-	userID, err := private.GetUserID(ctx)
+func (ctrl *Controller) CreateGroupBillForUser(ctx *gin.Context) {
+	currentUserID, err := private.GetUserID(ctx)
 	if err.Exists() {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, convErr := strconv.ParseUint(ctx.Param(constants.UserID), 10, 64)
+	if convErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
@@ -139,12 +146,50 @@ func (ctrl *Controller) CreateGroupBill(ctx *gin.Context) {
 		return
 	}
 
-	if err = ctrl.groupService.CreateGroupBill(ctx, userID, groupID, req); err.Exists() {
+	if err = ctrl.groupService.CreateGroupBill(ctx, currentUserID, userID, groupID, req); err.Exists() {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Bill created successfully"})
+}
+
+func (ctrl *Controller) AssignUserToGroup(ctx *gin.Context) {
+	logTag := util.LogPrefix(ctx, "AssignUserToGroup")
+
+	currentUserID, err := private.GetUserID(ctx)
+	if err.Exists() {
+		log.Printf("%s failed to extract current user ID: %v", logTag, err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized user"})
+		return
+	}
+
+	groupIDStr := ctx.Param(constants.GroupID)
+	userIDStr := ctx.Param(constants.UserID)
+
+	groupID, parseErr := strconv.ParseUint(groupIDStr, 10, 64)
+	if parseErr != nil {
+		log.Printf("%s invalid group ID: %s", logTag, groupIDStr)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	userID, parseErr := strconv.ParseUint(userIDStr, 10, 64)
+	if parseErr != nil {
+		log.Printf("%s invalid user ID: %s", logTag, userIDStr)
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	err = ctrl.groupService.AssignUserToGroup(ctx, currentUserID, userID, groupID)
+	if err.Exists() {
+		log.Printf("%s failed to assign user to group: %v", logTag, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "User assigned to group successfully"})
 }
 
 func (ctrl *Controller) UpdateGroupBill(ctx *gin.Context) {
@@ -222,7 +267,7 @@ func (ctrl *Controller) CalculateBillSplits(ctx *gin.Context) {
 
 	splits, err := ctrl.billSplitSvc.CalculateAndSaveBillSplits(ctx, userID, groupID)
 	if err.Exists() {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

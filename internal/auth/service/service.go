@@ -40,7 +40,7 @@ func (s *Service) GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) 
 	if tokenErr != nil {
 		log.Println(logTag, "Failed to generate token pair:", tokenErr)
 
-		return model.AuthToken{}, apperror.NewWithMessage("Failed to generate tokens", http.StatusInternalServerError)
+		return model.AuthToken{}, apperror.NewWithMessage("Failed to generate tokens", http.StatusBadRequest)
 	}
 
 	// Prepare AuthToken model
@@ -59,7 +59,7 @@ func (s *Service) GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) 
 	if err.Exists() {
 		log.Println(logTag, "Failed to check existing tokens:", err)
 
-		return model.AuthToken{}, apperror.NewWithMessage("Failed to update token", http.StatusInternalServerError)
+		return model.AuthToken{}, apperror.NewWithMessage("Failed to update token", http.StatusBadRequest)
 	}
 
 	if len(existingTokens) > 0 {
@@ -69,7 +69,7 @@ func (s *Service) GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) 
 		if updateErr.Exists() {
 			log.Println(logTag, "Failed to update existing token:", updateErr)
 
-			return model.AuthToken{}, apperror.NewWithMessage("Failed to update token", http.StatusInternalServerError)
+			return model.AuthToken{}, apperror.NewWithMessage("Failed to update token", http.StatusBadRequest)
 		}
 
 		return authToken, apperror.Error{}
@@ -79,7 +79,7 @@ func (s *Service) GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) 
 	if createErr.Exists() {
 		log.Println(logTag, "Failed to create new token:", createErr)
 
-		return model.AuthToken{}, apperror.NewWithMessage("Failed to create token", http.StatusInternalServerError)
+		return model.AuthToken{}, apperror.NewWithMessage("Failed to create token", http.StatusBadRequest)
 	}
 
 	return authToken, apperror.Error{}
@@ -94,7 +94,7 @@ func (s *Service) MarkTokenExpired(ctx context.Context, userID uint64) apperror.
 	if err.Exists() {
 		log.Println(logTag, "Failed to check existing tokens:", err)
 
-		return apperror.NewWithMessage("Failed to update token", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to update token", http.StatusBadRequest)
 	}
 
 	if len(existingTokens) > 0 {
@@ -110,7 +110,7 @@ func (s *Service) MarkTokenExpired(ctx context.Context, userID uint64) apperror.
 	if err.Exists() {
 		log.Println(logTag, "Failed to update existing token:", token, err)
 
-		return apperror.NewWithMessage("Failed to update token", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to update token", http.StatusBadRequest)
 	}
 
 	return apperror.Error{}
