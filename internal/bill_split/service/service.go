@@ -177,9 +177,9 @@ func (s *Service) validateUserGroupBillSplitsAccess(
 	}
 
 	if len(bills) > 0 {
-		log.Printf("%s failed to retrieve bill splits for group %d: %v", logTag, groupID, err)
+		log.Printf("%s bill splits already exist for group %d", logTag, groupID)
 
-		return false, apperror.NewWithMessage("Bill alreday splited", http.StatusBadRequest)
+		return false, apperror.NewWithMessage("Bill has already been split for this group", http.StatusBadRequest)
 	}
 
 	return len(bills) == 0, apperror.Error{}
