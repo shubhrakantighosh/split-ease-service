@@ -1,13 +1,28 @@
 package service
 
 import (
-	"main/internal/auth/repository"
+	groupRepo "main/internal/group/repository"
+	groupPermissionSvc "main/internal/group_permission/service"
+	"sync"
 )
 
 type Service struct {
-	repository.Interface
+	groupRepo          groupRepo.Interface
+	groupPermissionSvc groupPermissionSvc.Interface
 }
 
-func NewService(r repository.Interface) *Service {
-	return &Service{r}
+var (
+	syncOnce sync.Once
+	svc      *Service
+)
+
+func NewService(
+	groupRepo groupRepo.Interface,
+	groupPermissionSvc groupPermissionSvc.Interface,
+) *Service {
+	syncOnce.Do(func() {
+		svc = &Service{groupRepo: groupRepo, groupPermissionSvc: groupPermissionSvc}
+	})
+
+	return svc
 }

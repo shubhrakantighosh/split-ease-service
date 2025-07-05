@@ -8,7 +8,9 @@ package service
 
 import (
 	"context"
-	"main/internal/auth/repository"
+	"main/internal/group/repository"
+	repository2 "main/internal/group_permission/repository"
+	"main/internal/group_permission/service"
 	"main/pkg/db/postgres"
 )
 
@@ -16,6 +18,8 @@ import (
 
 func Wire(ctx context.Context, db *postgres.DbCluster) *Service {
 	repositoryRepository := repository.NewRepository(db)
-	service := NewService(repositoryRepository)
-	return service
+	repository3 := repository2.NewRepository(db)
+	serviceService := service.NewService(repository3)
+	service2 := NewService(repositoryRepository, serviceService)
+	return service2
 }

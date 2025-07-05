@@ -9,6 +9,7 @@ import (
 
 type Repository struct {
 	Interface
+	db *postgres.DbCluster
 }
 
 var (
@@ -18,7 +19,10 @@ var (
 
 func NewRepository(db *postgres.DbCluster) *Repository {
 	syncOnce.Do(func() {
-		repo = &Repository{&repository.Repository[model.GroupUser]{Db: db}}
+		repo = &Repository{
+			Interface: &repository.Repository[model.GroupUserPermission]{Db: db},
+			db:        db,
+		}
 	})
 
 	return repo

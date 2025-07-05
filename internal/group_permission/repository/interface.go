@@ -6,5 +6,5 @@ import (
 )
 
 type Interface interface {
-	repository.Interface[model.GroupUser]
+	repository.Interface[model.GroupUserPermission]
 }

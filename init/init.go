@@ -71,5 +71,9 @@ func initializeDB(ctx context.Context) {
 	db.GetSlaveDB(ctx).AutoMigrate(&model.OTP{})
 	db.GetSlaveDB(ctx).AutoMigrate(&model.User{})
 
+	db.GetSlaveDB(ctx).AutoMigrate(&model.Groups{})
+	db.GetSlaveDB(ctx).AutoMigrate(&model.GroupUserPermission{})
+	db.GetSlaveDB(ctx).AutoMigrate(&model.User{})
+
 	opostgres.SetCluster(db)
 }

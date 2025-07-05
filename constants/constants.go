@@ -14,4 +14,10 @@ const (
 	Code                = "code"
 	Used                = "used"
 	Password            = "password"
+	GroupID             = "group_id"
+	PermissionType      = "permission_type"
+	Name                = "name"
+	Description         = "description"
+	IsActive            = "is_active"
+	DeletedAt           = "deleted_at"
 )

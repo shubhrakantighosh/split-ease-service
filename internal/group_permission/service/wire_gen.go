@@ -8,7 +8,7 @@ package service
 
 import (
 	"context"
-	"main/internal/auth/repository"
+	"main/internal/group_permission/repository"
 	"main/pkg/db/postgres"
 )
 

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"regexp"
+	"strconv"
 )
 
 func DeduplicateSlice[T comparable](input []T) []T {
@@ -38,4 +39,8 @@ func IsValidEmail(email string) bool {
 	regex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 	re := regexp.MustCompile(regex)
 	return re.MatchString(email)
+}
+
+func ParseUint(val string) (uint64, error) {
+	return strconv.ParseUint(val, 10, 64)
 }
