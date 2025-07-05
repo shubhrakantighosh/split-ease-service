@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/rand"
 	"math/big"
+	"regexp"
 )
 
 func DeduplicateSlice[T comparable](input []T) []T {
@@ -31,4 +32,10 @@ func GenerateRandomNumericCode(length int) (string, error) {
 	}
 
 	return otp, nil
+}
+
+func IsValidEmail(email string) bool {
+	regex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(regex)
+	return re.MatchString(email)
 }

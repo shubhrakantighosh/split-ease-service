@@ -7,6 +7,7 @@ import (
 	"log"
 	"main/constants"
 	authSvc "main/internal/auth/service"
+	ctrlReq "main/internal/controller/request"
 	"main/internal/model"
 	otpSvc "main/internal/otp/service"
 	"main/internal/user/repository"
@@ -23,7 +24,7 @@ type Service struct {
 }
 
 var (
-	syncOnce *sync.Once
+	syncOnce sync.Once
 	svc      *Service
 )
 
@@ -35,29 +36,64 @@ func NewService(repo repository.Interface, authSvc authSvc.Interface, otpSvc otp
 	return svc
 }
 
-func (s *Service) AuthenticateUser(ctx context.Context, email, password string) (model.AuthToken, apperror.Error) {
-	logTag := util.LogPrefix(ctx, "AuthenticateUser")
-	filter := map[string]any{
-		constants.Email: email,
+func (s *Service) CreateUserAccount(ctx context.Context, req ctrlReq.RegisterRequest) apperror.Error {
+	logTag := util.LogPrefix(ctx, "CreateUserAccount")
+
+	users, err := s.repo.GetAll(ctx, map[string]any{constants.Email: req.Email})
+	if err.Exists() {
+		log.Printf("%s: failed to check existing user for email %s: %v", logTag, req.Email, err)
+
+		return apperror.NewWithMessage("Failed to validate user", http.StatusBadRequest)
 	}
 
-	user, err := s.repo.Get(ctx, filter)
-	if err.Exists() {
-		log.Println(logTag, err)
+	if len(users) > 0 {
+		log.Printf("%s: user already exists with email %s", logTag, req.Email)
+		return apperror.NewWithMessage("User already exists", http.StatusConflict)
+	}
 
-		return model.AuthToken{}, apperror.NewWithMessage("", http.StatusNotFound)
+	hashedPass, hashErr := hashPassword(req.Password)
+	if hashErr.Exists() {
+		log.Printf("%s: failed to hash password for email %s: %v", logTag, req.Email, hashErr)
+
+		return apperror.NewWithMessage("Failed to process password", http.StatusBadRequest)
+	}
+
+	user := model.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: hashedPass,
+		IsActive: true,
+	}
+	createErr := s.repo.Create(ctx, &user)
+	if createErr.Exists() {
+		log.Printf("%s: failed to create user for email %s: %v", logTag, req.Email, createErr)
+
+		return apperror.NewWithMessage("Failed to create user", http.StatusBadRequest)
+	}
+
+	return apperror.Error{}
+}
+
+func (s *Service) AuthenticateUser(ctx context.Context, email, password string) (model.AuthToken, apperror.Error) {
+	logTag := util.LogPrefix(ctx, "AuthenticateUser")
+
+	user, err := s.repo.Get(ctx, map[string]any{constants.Email: email})
+	if err.Exists() {
+		log.Printf("%s failed to get user by email %s: %v", logTag, email, err)
+
+		return model.AuthToken{}, apperror.NewWithMessage("User not found", http.StatusNotFound)
 	}
 
 	if !user.IsActive {
-		log.Println(logTag, err)
+		log.Printf("%s user %s is not active", logTag, email)
 
-		return model.AuthToken{}, apperror.NewWithMessage("Please acrive", http.StatusNotFound)
+		return model.AuthToken{}, apperror.NewWithMessage("User account is not active", http.StatusUnauthorized)
 	}
 
 	if !checkPasswordHash(user.Password, password) {
-		log.Println(logTag, err)
+		log.Printf("%s invalid password for user %s", logTag, email)
 
-		return model.AuthToken{}, apperror.NewWithMessage("Invalid Password", http.StatusNotFound)
+		return model.AuthToken{}, apperror.NewWithMessage("Invalid credentials", http.StatusUnauthorized)
 	}
 
 	return s.authSvc.GenerateOrUpdateAuthToken(ctx, user.ID)
@@ -68,27 +104,26 @@ func (s *Service) SendActivationEmail(ctx context.Context, email string) apperro
 
 	user, err := s.repo.Get(ctx, map[string]any{constants.Email: email})
 	if err.Exists() {
-		log.Printf("%s failed to check email existence for %s: %v", logTag, email, err)
+		log.Printf("%s failed to fetch user %s: %v", logTag, email, err)
 
-		return apperror.NewWithMessage("Something went wrong while checking email", http.StatusInternalServerError)
+		return apperror.NewWithMessage("User lookup failed", http.StatusBadRequest)
 	}
 
 	if user.IsActive {
-		log.Printf(fmt.Sprintf("%s is already active", email))
+		log.Printf("%s user %s is already active", logTag, email)
 
-		return apperror.NewWithMessage("This email is already registered", http.StatusBadRequest)
+		return apperror.NewWithMessage("Account is already activated", http.StatusBadRequest)
 	}
 
 	otp, err := s.otpSvc.GenerateOTP(ctx, user.ID, model.Activation)
 	if err.Exists() {
-		log.Printf("%s failed to generate otp for user %s: %v", logTag, user.ID, err)
+		log.Printf("%s failed to generate OTP for user %d: %v", logTag, user.ID, err)
 
-		return apperror.NewWithMessage("Something went wrong while generating otp for user", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to generate OTP", http.StatusBadRequest)
 	}
 
-	// sent otp to email
-
-	fmt.Println(otp)
+	// TODO: Send OTP via email service
+	fmt.Println("OTP:", otp)
 	return apperror.Error{}
 }
 
@@ -97,39 +132,37 @@ func (s *Service) ActivateUserAccount(ctx context.Context, email, password, otp 
 
 	user, err := s.repo.Get(ctx, map[string]any{constants.Email: email})
 	if err.Exists() {
-		log.Printf("%s failed to check email existence for %s: %v", logTag, email, err)
+		log.Printf("%s failed to get user by email %s: %v", logTag, email, err)
 
-		return apperror.NewWithMessage("Something went wrong while checking email", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to fetch user", http.StatusBadRequest)
 	}
 
 	if user.IsActive {
-		log.Printf(fmt.Sprintf("%s is already active", email))
+		log.Printf("%s user %s is already active", logTag, email)
 
-		return apperror.NewWithMessage("This email is already registered", http.StatusBadRequest)
+		return apperror.NewWithMessage("Account already activated", http.StatusBadRequest)
 	}
 
-	// check on for this otp valid or not based opn time
-	ok, err := s.otpSvc.ValidateOTP(ctx, user.ID, model.Activation)
+	isValid, err := s.otpSvc.ValidateOTP(ctx, user.ID, model.Activation, otp)
 	if err.Exists() {
-		log.Printf("%s failed to validate otp for user %s: %v", logTag, user.ID, err)
-
+		log.Printf("%s OTP validation failed for user %d: %v", logTag, user.ID, err)
 		return err
 	}
 
-	if !ok {
-		return apperror.NewWithMessage("generated new otp", http.StatusBadRequest)
-	}
-
-	hassPass, hasErr := hashPassword(password)
-	if hasErr.Exists() {
-		log.Println(logTag, err)
-
-		return apperror.NewWithMessage("password is incorrect", http.StatusBadRequest)
+	if !isValid {
+		log.Printf("%s invalid or expired OTP for user %d", logTag, user.ID)
+		return apperror.NewWithMessage("Invalid or expired OTP", http.StatusBadRequest)
 	}
 
 	user.IsActive = true
-	user.Password = hassPass
-	return s.UpdateUserProfile(ctx, user)
+	user.Password = password
+	err = s.UpdateUserProfile(ctx, user)
+	if err.Exists() {
+		log.Printf("%s - Failed to update user profile after successful OTP validation for user ID %d: %v", logTag, user.ID, err)
+		return err
+	}
+
+	return s.otpSvc.MarkOTPUsed(ctx, user.ID, otp)
 }
 
 func (s *Service) UpdateUserProfile(ctx context.Context, user model.User) apperror.Error {
@@ -138,34 +171,33 @@ func (s *Service) UpdateUserProfile(ctx context.Context, user model.User) apperr
 	if len(user.Email) > 0 {
 		users, err := s.repo.GetAll(ctx, map[string]any{constants.Email: user.Email})
 		if err.Exists() {
-			log.Println("%s failed to check email existence for %s: %v", logTag, user.Email, err)
+			log.Printf("%s failed to check email %s: %v", logTag, user.Email, err)
 
-			return apperror.NewWithMessage("Something went wrong while checking email", http.StatusInternalServerError)
+			return apperror.NewWithMessage("Something went wrong while checking email", http.StatusBadRequest)
 		}
 
 		if len(users) > 0 && users[0].ID != user.ID {
-			log.Printf("%s email %s already in use by user %d", logTag, user.Email, users[0].ID)
+			log.Printf("%s email %s is already used by user %d", logTag, user.Email, users[0].ID)
 
 			return apperror.NewWithMessage("This email is already registered", http.StatusBadRequest)
 		}
 	}
 
 	if len(user.Password) > 0 {
-		hashPass, err := hashPassword(user.Password)
+		hashedPassword, err := hashPassword(user.Password)
 		if err.Exists() {
 			log.Printf("%s failed to hash password: %v", logTag, err)
 
-			return apperror.NewWithMessage("Please try again", http.StatusInternalServerError)
+			return apperror.NewWithMessage("Failed to hash password", http.StatusBadRequest)
 		}
-
-		user.Password = hashPass
+		user.Password = hashedPassword
 	}
 
 	err := s.repo.Update(ctx, map[string]any{constants.ID: user.ID}, &user)
 	if err.Exists() {
 		log.Printf("%s failed to update user %d: %v", logTag, user.ID, err)
 
-		return apperror.NewWithMessage("Failed to update user profile", http.StatusInternalServerError)
+		return apperror.NewWithMessage("Failed to update user", http.StatusBadRequest)
 	}
 
 	return s.authSvc.MarkTokenExpired(ctx, user.ID)
@@ -174,22 +206,19 @@ func (s *Service) UpdateUserProfile(ctx context.Context, user model.User) apperr
 func (s *Service) IsUserValid(ctx context.Context, userID uint64) bool {
 	logTag := util.LogPrefix(ctx, "IsUserValid")
 
-	user, err := s.repo.Get(ctx, map[string]interface{}{
-		constants.ID: userID,
-	})
-
+	user, err := s.repo.Get(ctx, map[string]interface{}{constants.ID: userID})
 	if err.Exists() {
 		log.Printf("%s failed to fetch user %d: %v", logTag, userID, err)
 		return false
 	}
 
 	if user.ID == 0 {
-		log.Printf("%s user %d does not exist", logTag, userID)
+		log.Printf("%s user %d not found", logTag, userID)
 		return false
 	}
 
 	if !user.IsActive {
-		log.Printf("%s user %d is not active", logTag, userID)
+		log.Printf("%s user %d is inactive", logTag, userID)
 		return false
 	}
 
@@ -197,14 +226,14 @@ func (s *Service) IsUserValid(ctx context.Context, userID uint64) bool {
 }
 
 func hashPassword(password string) (string, apperror.Error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("failed to hash password: %v", err)
+		log.Printf("Hashing error: %v", err)
 
-		return "", apperror.NewWithMessage("Please try gain", http.StatusBadRequest)
+		return "", apperror.NewWithMessage("Failed to hash password", http.StatusBadRequest)
 	}
 
-	return string(hashedBytes), apperror.Error{}
+	return string(hashed), apperror.Error{}
 }
 
 func checkPasswordHash(hashedPassword, inputPassword string) bool {

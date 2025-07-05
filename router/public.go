@@ -2,21 +2,33 @@ package router
 
 import (
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	authService "main/internal/auth/service"
+	ctrl "main/internal/controller"
+	userService "main/internal/user/service"
 	"main/middleware"
 	opostgres "main/pkg/db/postgres"
 )
 
-func PublicRoutes(ctx context.Context, s *gin.Engine) {
-	route := s.Group("api/v1")
+func RegisterPublicRoutes(ctx context.Context, engine *gin.Engine) {
+	apiV1 := engine.Group("/api/v1")
 
-	route.POST("/login")
+	userController := ctrl.Wire(ctx, opostgres.GetCluster().DbCluster)
 
-	authMiddleware := middleware.NewAuthMiddleware(authService.Wire(ctx, opostgres.GetCluster().DbCluster))
-	baseRoute := s.Group("/api/v1", middleware.SanitizeQueryParams(), authMiddleware.Authenticate())
+	// Public user routes
+	userRoutes := apiV1.Group("/users")
+	{
+		userRoutes.POST("/register", userController.RegisterUser)
+		userRoutes.POST("/login", userController.LoginUser)
+		userRoutes.POST("/activate", userController.ActivateUser)
+		userRoutes.POST("/send-activation", userController.SendActivationEmail)
+	}
 
-	fmt.Println(baseRoute)
+	// Auth middleware
+	authMiddleware := middleware.NewAuthMiddleware(userService.Wire(ctx, opostgres.GetCluster().DbCluster))
 
+	// Protected routes
+	protectedRoutes := apiV1.Group("/", middleware.SanitizeQueryParams(), authMiddleware.Authenticate())
+	{
+		protectedRoutes.PUT("/users", userController.UpdateUserProfile)
+	}
 }

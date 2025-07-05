@@ -13,7 +13,8 @@ type Interface interface {
 		ctx context.Context,
 		userID uint64,
 		purpose model.Purpose,
+		otp string,
 	) (bool, apperror.Error)
 
-	MarkOTPAsUsed(ctx context.Context, userID uint64, otpCode string) apperror.Error
+	MarkOTPUsed(ctx context.Context, userID uint64, otpCode string) apperror.Error
 }

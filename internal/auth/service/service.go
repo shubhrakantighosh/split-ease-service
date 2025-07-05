@@ -20,7 +20,7 @@ type Service struct {
 }
 
 var (
-	syncOnce *sync.Once
+	syncOnce sync.Once
 	svc      *Service
 )
 
@@ -45,10 +45,11 @@ func (s *Service) GenerateOrUpdateAuthToken(ctx context.Context, userID uint64) 
 
 	// Prepare AuthToken model
 	authToken := model.AuthToken{
-		UserID:          userID,
-		AccessToken:     token.AccessToken,
-		RefreshToken:    token.RefreshToken,
-		AccessExpiresAt: token.AccessExpiresAt,
+		UserID:           userID,
+		AccessToken:      token.AccessToken,
+		RefreshToken:     token.RefreshToken,
+		AccessExpiresAt:  token.AccessExpiresAt,
+		RefreshExpiresAt: token.RefreshExpiresAt,
 	}
 
 	// Check if token already exists for user

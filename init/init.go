@@ -68,6 +68,8 @@ func initializeDB(ctx context.Context) {
 	fmt.Println("Initialized Postgres DB client")
 
 	db.GetSlaveDB(ctx).AutoMigrate(&model.AuthToken{})
+	db.GetSlaveDB(ctx).AutoMigrate(&model.OTP{})
+	db.GetSlaveDB(ctx).AutoMigrate(&model.User{})
 
 	opostgres.SetCluster(db)
 }

@@ -4,12 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"main/constants"
-	"main/internal/auth/service"
 	"main/internal/jwt/private"
+	"main/internal/user/service"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -60,20 +59,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 	}
 }
 
-var jwtKey = []byte("your_secret_key") // Use env variable in production
-
-func GenerateJWT(userID uint64) (string, error) {
-	claims := &Claims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
-}
+var jwtKey = []byte("access_secret") // Use env variable in production
 
 func ParseJWT(tokenStr string) (*private.Claims, error) {
 	claims := &private.Claims{}

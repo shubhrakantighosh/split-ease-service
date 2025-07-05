@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/google/wire"
-	"main/internal/auth/repository"
+	"main/internal/otp/repository"
 )
 
 var ProviderSet = wire.NewSet(

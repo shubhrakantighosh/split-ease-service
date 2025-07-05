@@ -19,7 +19,7 @@ type Service struct {
 }
 
 var (
-	syncOnce *sync.Once
+	syncOnce sync.Once
 	svc      *Service
 )
 
@@ -61,6 +61,7 @@ func (s *Service) ValidateOTP(
 	ctx context.Context,
 	userID uint64,
 	purpose model.Purpose,
+	otp string,
 ) (bool, apperror.Error) {
 	logTag := util.LogPrefix(ctx, "ValidateOTP")
 
@@ -93,18 +94,24 @@ func (s *Service) ValidateOTP(
 		return false, apperror.NewWithMessage("Invalid or expired OTP", http.StatusBadRequest)
 	}
 
-	otp := otps[0]
-	if otp.ExpiresAt.Before(time.Now()) {
-		log.Println(logTag, "OTP expired for user:", userID)
+	latestOTP := otps[0]
+	if latestOTP.ExpiresAt.Before(time.Now()) {
+		log.Printf("%s OTP expired for user ID: %d", logTag, userID)
 
 		return false, apperror.NewWithMessage("OTP has expired", http.StatusBadRequest)
+	}
+
+	if latestOTP.Code != otp {
+		log.Printf("%s OTP code mismatch for user ID: %d", logTag, userID)
+
+		return false, apperror.NewWithMessage("Invalid OTP", http.StatusBadRequest)
 	}
 
 	return true, apperror.Error{}
 }
 
-func (s *Service) MarkOTPAsUsed(ctx context.Context, userID uint64, otpCode string) apperror.Error {
-	logTag := util.LogPrefix(ctx, "MarkOTPAsUsed")
+func (s *Service) MarkOTPUsed(ctx context.Context, userID uint64, otpCode string) apperror.Error {
+	logTag := util.LogPrefix(ctx, "MarkOTPUsed")
 
 	err := s.Update(ctx, map[string]any{
 		constants.UserID: userID,
@@ -114,8 +121,9 @@ func (s *Service) MarkOTPAsUsed(ctx context.Context, userID uint64, otpCode stri
 	})
 
 	if err.Exists() {
-		log.Println(logTag, "Failed to mark OTP as used:", err)
-		return apperror.NewWithMessage("Failed to update OTP status", http.StatusInternalServerError)
+		log.Printf("%s: failed to mark OTP as used for user %d and code %s: %v", logTag, userID, otpCode, err)
+
+		return apperror.NewWithMessage("Unable to mark OTP as used", http.StatusInternalServerError)
 	}
 
 	return apperror.Error{}
