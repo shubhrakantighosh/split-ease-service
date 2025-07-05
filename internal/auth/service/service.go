@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/spf13/viper"
 	"log"
 	"main/constants"
 	"main/internal/auth/repository"
@@ -116,9 +117,6 @@ func (s *Service) MarkTokenExpired(ctx context.Context, userID uint64) apperror.
 	return apperror.Error{}
 }
 
-var jwtKey = []byte("access_secret")      // Use env var
-var refreshKey = []byte("refresh_secret") // Use env var
-
 type tokenPair struct {
 	AccessToken      string
 	RefreshToken     string
@@ -129,8 +127,8 @@ type tokenPair struct {
 func generateTokenPair(userID uint64) (*tokenPair, error) {
 	userDetails := private.UserDetails{UserID: userID}
 
-	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
+	accessExpiresAt := time.Now().Add(viper.GetDuration("jwt.access_expiry"))
+	refreshExpiresAt := time.Now().Add(viper.GetDuration("jwt.refresh_expiry"))
 
 	// Access Token
 	accessClaims := &private.Claims{
@@ -140,8 +138,8 @@ func generateTokenPair(userID uint64) (*tokenPair, error) {
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-
-	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims).SignedString(jwtKey)
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims).
+		SignedString([]byte(viper.GetString("jwt.access_secret")))
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +152,8 @@ func generateTokenPair(userID uint64) (*tokenPair, error) {
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-
-	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(refreshKey)
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).
+		SignedString([]byte(viper.GetString("jwt.refresh_secret")))
 	if err != nil {
 		return nil, err
 	}

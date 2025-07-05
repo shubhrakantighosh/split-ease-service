@@ -21,7 +21,7 @@ postgresql:
     password: "admin"
 
 jwt:
-  access_secret: your_access_secret_key_here
-  refresh_secret: your_refresh_secret_key_here
-  access_expiry_minutes: 15
-  refresh_expiry_days: 7
+  access_secret: "zY9^vB3!uNc7@Qm1$Ljx2R#AeTg%Wz5o"
+  refresh_secret: "Pm4&Ks9*Lq2#Nh8@DcW1!Vy$TzRfGb7e"
+  access_expiry: "15m"
+  refresh_expiry: "168h"

@@ -2,7 +2,6 @@ package service
 
 import (
 	billSvc "main/internal/bill/service"
-	billSplitSvc "main/internal/bill_split/service"
 	groupRepo "main/internal/group/repository"
 	groupPermissionSvc "main/internal/group_permission/service"
 	userSvc "main/internal/user/service"
@@ -14,7 +13,6 @@ type Service struct {
 	groupPermissionSvc groupPermissionSvc.Interface
 	billSvc            billSvc.Interface
 	userSvc            userSvc.Interface
-	billSplitSvc       billSplitSvc.Interface
 }
 
 var (
@@ -27,10 +25,9 @@ func NewService(
 	groupPermissionSvc groupPermissionSvc.Interface,
 	billSvc billSvc.Interface,
 	userSvc userSvc.Interface,
-	billSplitSvc billSplitSvc.Interface,
 ) *Service {
 	syncOnce.Do(func() {
-		svc = &Service{groupRepo: groupRepo, groupPermissionSvc: groupPermissionSvc, billSvc: billSvc, userSvc: userSvc, billSplitSvc: billSplitSvc}
+		svc = &Service{groupRepo: groupRepo, groupPermissionSvc: groupPermissionSvc, billSvc: billSvc, userSvc: userSvc}
 	})
 
 	return svc

@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/spf13/viper"
 	"main/constants"
 	"main/internal/jwt/private"
 	"main/internal/user/service"
@@ -40,7 +41,7 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 		}
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		claims, err := ParseJWT(tokenStr)
+		claims, err := parseJWT(tokenStr)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			ctx.Abort()
@@ -59,12 +60,10 @@ func (a *AuthMiddleware) Authenticate() gin.HandlerFunc {
 	}
 }
 
-var jwtKey = []byte("access_secret") // Use env variable in production
-
-func ParseJWT(tokenStr string) (*private.Claims, error) {
+func parseJWT(tokenStr string) (*private.Claims, error) {
 	claims := &private.Claims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return viper.GetString("jwt.access_secret"), nil
 	})
 
 	if err != nil || !token.Valid {
