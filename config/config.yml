@@ -1,0 +1,21 @@
+server:
+  port: ":8081"
+
+service:
+  name: "split-ease-service"
+
+postgresql:
+  debugMode: true
+  database: "crud"
+  maxOpenConns: 10
+  maxIdleConns: 2
+  master:
+    host: "127.0.0.1"
+    port: "5433"
+    username: "admin"
+    password: "admin"
+  slaves:
+    hosts: "127.0.0.1"
+    port: "5433"
+    username: "admin"
+    password: "admin"
